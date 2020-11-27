@@ -1,0 +1,26 @@
+name: Deploy to AWS Lambda
+on: [push]
+jobs:
+  deploy-lambda:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v1
+
+      - name: Install Dependencies
+        run: |
+          python3 -m pip install --system -r backend/requirements.txt -t backend/
+
+      - name: Zip Functions
+        run: |
+          cd backend && zip -r ../code.zip ./* && cd ..
+
+      - name: Deploy
+        uses: appleboy/lambda-action@master
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: ${{ secrets.AWS_REGION }}
+          function_name: lambda-function
+          zip_file: code.zip
+          handler: index.handler

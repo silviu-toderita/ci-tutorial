@@ -1,0 +1,26 @@
+name: Deploy to GH Pages
+on: [push]
+jobs:
+  deploy-gh-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2.3.1
+        with:
+          persist-credentials: false
+
+      - name: Append API
+        env:
+          API_BASE: ${{ secrets.API_URL }}
+        run: |
+          sed -i -e "s@<--API_TARGET-->@${API_BASE}@g" frontend/index.html
+          sed -i -e "s@<--VERSION-->@${GITHUB_RUN_NUMBER}@g" frontend/index.html
+
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@3.7.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: frontend
+          CLEAN: false
+          PRESERVE: true

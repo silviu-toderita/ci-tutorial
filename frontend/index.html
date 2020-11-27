@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Dashboard, v.<--VERSION--></title>
+    <link rel="stylesheet" href="bulma.min.css" />
+    <script>
+      const elementFactory = (type, classes, parameters = {}) => {
+        const element = document.createElement(type);
+        element.classList.add(...classes);
+        for (const param in parameters) {
+          element[param] = parameters[param];
+        }
+        return element;
+      };
+
+      const functionDivFactory = (name, description, apiUrl) => {
+        const containerDiv = elementFactory("div", ["column", "is-4"]);
+        const boxDiv = elementFactory("div", ["box"]);
+        const contentDiv = elementFactory("div", ["content"]);
+        const titleDiv = elementFactory("h3", ["title"], { innerHTML: name });
+        const descriptionDiv = elementFactory("p", [], {
+          innerHTML: description,
+        });
+        const fieldDiv = elementFactory("div", ["field", "has-addons"]);
+        const controlDiv = elementFactory("div", ["control", "is-expanded"]);
+        const inputDiv = elementFactory("input", ["input"], {
+          type: "text",
+          placeholder: "Input",
+        });
+        const controlButton = elementFactory("div", ["control"]);
+        const controlButtonText = elementFactory("a", ["button", "is-info"], {
+          innerHTML: "Run",
+        });
+        const outputDiv = elementFactory("input", ["input"], {
+          type: "text",
+          placeholder: "Output",
+          readonly: true,
+          style: "pointer-events: none",
+          value: "",
+        });
+
+        controlButton.appendChild(controlButtonText);
+        controlDiv.appendChild(inputDiv);
+        fieldDiv.appendChild(controlDiv);
+        fieldDiv.appendChild(controlButton);
+        contentDiv.appendChild(titleDiv);
+        contentDiv.appendChild(descriptionDiv);
+        contentDiv.appendChild(fieldDiv);
+        contentDiv.appendChild(outputDiv);
+        boxDiv.appendChild(contentDiv);
+        containerDiv.appendChild(boxDiv);
+
+        const runner = async () => {
+          inputDiv.disabled = true;
+          controlButtonText.classList.add("is-loading");
+          try {
+            let response = await fetch(apiUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                payload: inputDiv.value,
+              }),
+            });
+            response = await response.json();
+            outputDiv.value = response["response"];
+          } catch (e) {
+            outputDiv.value = e;
+          }
+          controlButtonText.classList.remove("is-loading");
+          inputDiv.disabled = false;
+        };
+
+        controlButton.addEventListener("click", runner);
+        inputDiv.addEventListener("keypress", async (e) => {
+          if (e.key === "Enter") {
+            await runner();
+          }
+        });
+
+        return containerDiv;
+      };
+      const API_BASE = "<--API_TARGET-->";
+
+      window.addEventListener("load", () => {
+        const loader = document.getElementById("initial-loader");
+        const functionContainer = document.getElementById("function-container");
+        const errorHandler = () => {
+          const columnDiv = elementFactory("div", ["column", "is-12"]);
+          const title = elementFactory("h1", ["title"], {
+            innerHTML: "Ooops!",
+          });
+          const subtitle = elementFactory("h1", ["subtitle"], {
+            innerHTML:
+              "Looks like your API isn't properly configured. Check your secrets config.",
+          });
+
+          columnDiv.appendChild(title);
+          columnDiv.appendChild(subtitle);
+          loader.remove();
+          functionContainer.appendChild(columnDiv);
+        };
+        if (API_BASE.includes("API_TARGET") || !API_BASE) {
+          errorHandler();
+        } else {
+          fetch(API_BASE, {
+            method: "POST",
+          })
+            .then((e) => e.json())
+            .then((e) => {
+              for (const func in e) {
+                loader.remove();
+                functionContainer.appendChild(
+                  functionDivFactory(func, e[func], `${API_BASE}?route=${func}`)
+                );
+              }
+            })
+            .catch(() => {
+              errorHandler();
+            });
+        }
+      });
+    </script>
+  </head>
+
+  <body>
+    <section class="hero">
+      <div class="hero-body">
+        <div class="container is-widescreen">
+          <h1 class="title">Function Dashboard, v.<--VERSION--></h1>
+          <h2 class="subtitle">
+            The following functions were found on the backend.
+          </h2>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="container is-fullhd">
+        <progress
+          id="initial-loader"
+          class="progress is-small is-primary"
+          max="100"
+        ></progress>
+        <div class="columns is-multiline" id="function-container"></div>
+      </div>
+    </section>
+  </body>
+</html>
