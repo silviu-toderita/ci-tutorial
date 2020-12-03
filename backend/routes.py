@@ -5,7 +5,12 @@ import requests
 
 def plus_one(payload):
     """Adds one to the input integer."""
-    return str(int(payload) + 1)
+    try:
+        payload = int(payload)
+    except: 
+        return "Invalid input."
+    else:
+        return str(int(payload) + 1)
 
 
 def sort(payload):
