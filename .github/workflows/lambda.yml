@@ -10,6 +10,10 @@ jobs:
       - name: Install Dependencies
         run: |
           python3 -m pip install --system -r backend/requirements.txt -t backend/
+      
+      - name: Run Tests
+        run: |
+          python3 backend/tests.py
 
       - name: Zip Functions
         run: |
